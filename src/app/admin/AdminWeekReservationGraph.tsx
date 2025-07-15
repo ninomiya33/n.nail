@@ -1,0 +1,237 @@
+import React, { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient";
+
+const timeSlots = [
+  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+  "16:00", "16:30", "17:00"
+];
+
+function getWeekDates(startDate: Date) {
+  const week: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + i);
+    week.push(d.toISOString().slice(0, 10));
+  }
+  return week;
+}
+
+const today = new Date();
+function getMonday(d: Date) {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+
+function getSlotIndex(time: string) {
+  return timeSlots.indexOf(time);
+}
+
+type Reservation = {
+  id: string;
+  name: string;
+  menu: string;
+  start_time: string;
+  end_time: string;
+  date: string;
+};
+
+export default function AdminWeekReservationGraph() {
+  const [weekStart, setWeekStart] = useState<Date>(getMonday(today));
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<{open: boolean, reservation: Reservation|null}>({open: false, reservation: null});
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', menu: '', start_time: '', end_time: '' });
+  const maxDate = new Date(today);
+  maxDate.setMonth(maxDate.getMonth() + 3);
+  maxDate.setHours(0,0,0,0);
+
+  const weekDates = getWeekDates(weekStart);
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("reservations")
+        .select("id, name, menu, start_time, end_time, date")
+        .in("date", weekDates);
+      if (!error && data) setReservations(data);
+      setLoading(false);
+    };
+    fetchReservations();
+  }, [weekStart]);
+
+  const handlePrevWeek = () => {
+    const prev = new Date(weekStart);
+    prev.setDate(prev.getDate() - 7);
+    setWeekStart(prev);
+  };
+  const handleNextWeek = () => {
+    const next = new Date(weekStart);
+    next.setDate(next.getDate() + 7);
+    if (next <= maxDate) setWeekStart(next);
+  };
+
+  function findReservation(date: string, slot: string) {
+    return reservations.find(r =>
+      r.date === date && getSlotIndex(r.start_time?.slice(0,5)) === getSlotIndex(slot)
+    );
+  }
+
+  function getColSpan(res: Reservation) {
+    const startIdx = getSlotIndex(res.start_time?.slice(0,5));
+    const endIdx = getSlotIndex(res.end_time?.slice(0,5));
+    return endIdx - startIdx + 1;
+  }
+
+  return (
+    <div style={{
+      background: '#fff',
+      borderRadius: 18,
+      boxShadow: '0 4px 24px rgba(200,180,160,0.10)',
+      padding: 16,
+      marginBottom: 24,
+      width: '100%',
+      overflowX: 'auto'
+    }}>
+      <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+        <button onClick={handlePrevWeek} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'4px 12px', fontWeight:600, cursor:'pointer'}}>前の週</button>
+        <span style={{fontWeight:700, color:'#bfae9e', fontSize:16}}>
+          {weekDates[0].replace(/-/g,'/')} 〜 {weekDates[6].replace(/-/g,'/')}
+        </span>
+        <button onClick={handleNextWeek} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'4px 12px', fontWeight:600, cursor:'pointer'}} disabled={weekDates[6] >= maxDate.toISOString().slice(0,10)}>次の週</button>
+      </div>
+      <div style={{width: '100%', overflowX: 'auto'}}>
+        <table style={{minWidth: 1100, borderCollapse:'separate', borderSpacing:0, fontSize:14}}>
+          <thead>
+            <tr>
+              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>日付</th>
+              {timeSlots.map(slot => (
+                <th key={slot} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{slot}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weekDates.map((date, rowIdx) => {
+              let skip = 0;
+              return (
+                <tr key={date}>
+                  <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{date.slice(5).replace('-','/')}</td>
+                  {timeSlots.map((slot, colIdx) => {
+                    if (skip > 0) { skip--; return null; }
+                    const res = findReservation(date, slot);
+                    if (res) {
+                      const colSpan = getColSpan(res);
+                      skip = colSpan - 1;
+                      const isDesign = res.menu === "デザイン";
+                      return (
+                        <td key={slot} colSpan={colSpan} style={{padding:0, border:'1px solid #f3b6c2', position:'relative', cursor:'pointer'}}
+                          onClick={() => setModal({open:true, reservation:res})}
+                        >
+                          <div style={{
+                            background: isDesign ? '#f3b6c2' : '#fff',
+                            border: isDesign ? 'none' : '2px solid #f3b6c2',
+                            color: isDesign ? '#fff' : '#bfae9e',
+                            borderRadius:14,
+                            height:32,
+                            margin:'2px auto',
+                            width:'90%',
+                            position:'relative',
+                            left:0, right:0,
+                            display:'flex',
+                            flexDirection:'row', // 横並びに変更
+                            alignItems:'center',
+                            justifyContent:'center',
+                            fontWeight:600,
+                            fontSize:15
+                          }}>
+                            <span style={{fontWeight:700, marginRight:8}}>{res.name}</span>
+                            <span style={{fontSize:13}}>{res.start_time?.slice(0,5)}〜{res.end_time?.slice(0,5)}</span>
+                          </div>
+                        </td>
+                      );
+                    }
+                    return <td key={slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, background:'#fff'}}></td>;
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {loading && <div style={{color:'#bfae9e',marginTop:8}}>読み込み中...</div>}
+      {/* モーダル */}
+      {modal.open && modal.reservation && (
+        <div style={{
+          position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.18)', zIndex:1000,
+          display:'flex', alignItems:'center', justifyContent:'center'
+        }} onClick={()=>{ setModal({open:false,reservation:null}); setEditMode(false); }}>
+          <div style={{background:'#fff', borderRadius:16, minWidth:280, maxWidth:360, padding:24, boxShadow:'0 4px 24px rgba(200,180,160,0.18)'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:700, color:'#a88c7d', fontSize:18, marginBottom:12}}>予約詳細</div>
+            {!editMode && modal.reservation ? (
+              <>
+                <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>名前：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.name}</span></div>
+                <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>メニュー：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.menu}</span></div>
+                <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>時間：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.start_time?.slice(0,5)}〜{modal.reservation.end_time?.slice(0,5)}</span></div>
+                <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>日付：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.date}</span></div>
+                <button style={{marginTop:12, background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={()=>{
+                  setEditForm({
+                    name: modal.reservation?.name || '',
+                    menu: modal.reservation?.menu || '',
+                    start_time: modal.reservation?.start_time?.slice(0,5) || '',
+                    end_time: modal.reservation?.end_time?.slice(0,5) || ''
+                  });
+                  setEditMode(true);
+                }}>編集</button>
+                <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer'}} onClick={()=>setModal({open:false,reservation:null})}>閉じる</button>
+              </>
+            ) : editMode && modal.reservation ? (
+              <>
+                <div style={{marginBottom:8}}>
+                  <label style={{color:'#a88c7d', fontWeight:600}}>名前：
+                    <input type="text" value={editForm.name} onChange={e=>setEditForm(f=>({...f, name:e.target.value}))} style={{width:'100%', borderRadius:8, border:'1.5px solid #f3b6c2', padding:'6px 10px', fontSize:15, color:'#a88c7d', marginTop:4}} />
+                  </label>
+                </div>
+                <div style={{marginBottom:8}}>
+                  <label style={{color:'#a88c7d', fontWeight:600}}>メニュー：
+                    <select value={editForm.menu} onChange={e=>setEditForm(f=>({...f, menu:e.target.value}))} style={{width:'100%', borderRadius:8, border:'1.5px solid #f3b6c2', padding:'6px 10px', fontSize:15, color:'#a88c7d', marginTop:4}}>
+                      <option value="デザイン">デザイン</option>
+                      <option value="シンプル">シンプル</option>
+                    </select>
+                  </label>
+                </div>
+                <div style={{marginBottom:8}}>
+                  <label style={{color:'#a88c7d', fontWeight:600}}>開始時間：
+                    <input type="time" value={editForm.start_time} onChange={e=>setEditForm(f=>({...f, start_time:e.target.value}))} style={{width:'100%', borderRadius:8, border:'1.5px solid #f3b6c2', padding:'6px 10px', fontSize:15, color:'#a88c7d', marginTop:4}} />
+                  </label>
+                </div>
+                <div style={{marginBottom:8}}>
+                  <label style={{color:'#a88c7d', fontWeight:600}}>終了時間：
+                    <input type="time" value={editForm.end_time} onChange={e=>setEditForm(f=>({...f, end_time:e.target.value}))} style={{width:'100%', borderRadius:8, border:'1.5px solid #f3b6c2', padding:'6px 10px', fontSize:15, color:'#a88c7d', marginTop:4}} />
+                  </label>
+                </div>
+                <button style={{marginTop:12, background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={async()=>{
+                  if (!modal.reservation) return;
+                  await supabase.from('reservations').update({
+                    name: editForm.name,
+                    menu: editForm.menu,
+                    start_time: editForm.start_time + ':00',
+                    end_time: editForm.end_time + ':00'
+                  }).eq('id', modal.reservation.id);
+                  setEditMode(false);
+                  setModal(m => ({...m, reservation: {...(m.reservation as Reservation), ...editForm, start_time: editForm.start_time + ':00', end_time: editForm.end_time + ':00'}}));
+                }}>保存</button>
+                <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer'}} onClick={()=>setEditMode(false)}>キャンセル</button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+} 

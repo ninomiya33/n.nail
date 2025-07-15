@@ -1,0 +1,88 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff8f3 0%, #fbeee6 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 24px 16px;
+}
+
+.logoArea {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-family: 'SF Pro Rounded', 'Avenir', 'Arial Rounded MT Bold', sans-serif;
+  font-size: 2.2rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+.logoN {
+  color: #e7bfa7;
+  font-size: 2.5rem;
+  text-shadow: 0 2px 8px #f3e1d2;
+}
+.logoDot {
+  color: #f3b6c2;
+  font-size: 1.5rem;
+  margin: 0 0.1em;
+}
+.logoNail {
+  color: #bfae9e;
+  font-size: 1.5rem;
+}
+
+.title {
+  font-size: 1.3rem;
+  color: #a88c7d;
+  margin-bottom: 18px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 32px;
+}
+.imageCard {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(200, 180, 160, 0.10);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1/1;
+}
+.image {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.linkGroup {
+  display: flex;
+  gap: 18px;
+  margin-top: 8px;
+}
+.linkBtn {
+  background: #fff;
+  color: #e7bfa7;
+  font-weight: bold;
+  font-size: 1.05rem;
+  border: 2px solid #e7bfa7;
+  border-radius: 14px;
+  padding: 10px 22px;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  letter-spacing: 0.04em;
+}
+.linkBtn:active {
+  background: #fbeee6;
+  color: #bfae9e;
+} 

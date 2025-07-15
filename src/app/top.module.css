@@ -1,0 +1,101 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff8f3 0%, #fbeee6 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 16px 24px 16px;
+}
+
+.logoArea {
+  margin-top: 32px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.logoText {
+  font-family: 'SF Pro Rounded', 'Avenir', 'Arial Rounded MT Bold', sans-serif;
+  font-size: 2.8rem;
+  font-weight: bold;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+}
+.logoN {
+  color: #e7bfa7;
+  font-size: 3.2rem;
+  text-shadow: 0 2px 8px #f3e1d2;
+}
+.logoDot {
+  color: #f3b6c2;
+  font-size: 2.2rem;
+  margin: 0 0.1em;
+}
+.logoNail {
+  color: #bfae9e;
+  font-size: 2.2rem;
+}
+.logoSub {
+  font-size: 1.1rem;
+  color: #bfae9e;
+  margin-top: 0.2em;
+  letter-spacing: 0.1em;
+}
+
+.introCard {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(200, 180, 160, 0.10);
+  padding: 24px 20px;
+  margin-bottom: 32px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  font-size: 1.1rem;
+  color: #a88c7d;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 8px;
+}
+.reserveBtn {
+  background: linear-gradient(90deg, #f3b6c2 0%, #e7bfa7 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(243, 182, 194, 0.15);
+  padding: 16px 0;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.05em;
+}
+.reserveBtn:active {
+  background: linear-gradient(90deg, #e7bfa7 0%, #f3b6c2 100%);
+  box-shadow: 0 1px 4px rgba(243, 182, 194, 0.10);
+}
+.galleryBtn {
+  background: #fff;
+  color: #e7bfa7;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: 2px solid #e7bfa7;
+  border-radius: 16px;
+  padding: 14px 0;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  letter-spacing: 0.04em;
+}
+.galleryBtn:active {
+  background: #fbeee6;
+  color: #bfae9e;
+} 

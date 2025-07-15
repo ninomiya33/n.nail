@@ -1,0 +1,186 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff8f3 0%, #fbeee6 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 8px 24px 8px;
+}
+
+.title {
+  font-size: 1.5rem;
+  color: #a88c7d;
+  margin-bottom: 24px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.tableWrapper {
+  width: 100%;
+  max-width: 900px;
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(200, 180, 160, 0.10);
+  padding: 18px 8px 18px 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 1rem;
+  background: transparent;
+}
+.table th, .table td {
+  border: 1px solid #f3b6c2;
+  padding: 8px 6px;
+  text-align: center;
+  min-width: 70px;
+}
+.table th {
+  background: #fbeee6;
+  color: #bfae9e;
+  font-weight: 600;
+}
+.staffCell {
+  background: #fbeee6;
+  color: #e7bfa7;
+  font-weight: 600;
+}
+.reserved {
+  background: #f3b6c2;
+  color: #fff;
+  border-radius: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(243, 182, 194, 0.10);
+}
+.resInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 4px 0;
+  padding: 2px 0;
+}
+.resName {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.resMenu {
+  font-size: 0.95rem;
+  color: #fff8f3;
+}
+.empty {
+  background: #fff;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(200, 180, 160, 0.18);
+  padding: 32px 24px 24px 24px;
+  min-width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.modalTitle {
+  font-size: 1.2rem;
+  color: #a88c7d;
+  font-weight: 700;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.modalLabel {
+  font-size: 1.05rem;
+  color: #bfae9e;
+  font-weight: 500;
+  margin-bottom: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.modalInput {
+  border: 1.5px solid #f3b6c2;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 1.05rem;
+  background: #fff8f3;
+  color: #a88c7d;
+  outline: none;
+  transition: border 0.2s;
+  width: 100%;
+}
+.modalInput:focus {
+  border: 1.5px solid #e7bfa7;
+  background: #fff;
+}
+.modalBtnGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+.modalSaveBtn {
+  background: linear-gradient(90deg, #f3b6c2 0%, #e7bfa7 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 0;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.05em;
+  box-shadow: 0 2px 8px rgba(243, 182, 194, 0.10);
+}
+.modalSaveBtn:active {
+  background: linear-gradient(90deg, #e7bfa7 0%, #f3b6c2 100%);
+}
+.modalDeleteBtn {
+  background: #fff0f0;
+  color: #e57373;
+  font-weight: bold;
+  font-size: 1.05rem;
+  border: 1.5px solid #e57373;
+  border-radius: 14px;
+  padding: 12px 0;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.modalDeleteBtn:active {
+  background: #ffeaea;
+  color: #b71c1c;
+}
+.modalCancelBtn {
+  background: #f5f5f5;
+  color: #bfae9e;
+  font-weight: bold;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 0;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.modalCancelBtn:active {
+  background: #ececec;
+  color: #a88c7d;
+} 

@@ -1,0 +1,123 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #fff8f3 0%, #fbeee6 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 24px 16px;
+}
+
+.logoArea {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-family: 'SF Pro Rounded', 'Avenir', 'Arial Rounded MT Bold', sans-serif;
+  font-size: 2.2rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+.logoN {
+  color: #e7bfa7;
+  font-size: 2.5rem;
+  text-shadow: 0 2px 8px #f3e1d2;
+}
+.logoDot {
+  color: #f3b6c2;
+  font-size: 1.5rem;
+  margin: 0 0.1em;
+}
+.logoNail {
+  color: #bfae9e;
+  font-size: 1.5rem;
+}
+
+.title {
+  font-size: 1.3rem;
+  color: #a88c7d;
+  margin-bottom: 18px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.form {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(200, 180, 160, 0.10);
+  padding: 24px 20px 18px 20px;
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.label {
+  font-size: 1.05rem;
+  color: #bfae9e;
+  font-weight: 500;
+  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.input {
+  border: 1.5px solid #f3b6c2;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 1.05rem;
+  background: #fff8f3;
+  color: #a88c7d;
+  outline: none;
+  transition: border 0.2s;
+}
+.input:focus {
+  border: 1.5px solid #e7bfa7;
+  background: #fff;
+}
+.textarea {
+  border: 1.5px solid #e7bfa7;
+  border-radius: 12px;
+  padding: 12px 10px;
+  font-size: 1.05rem;
+  background: #fff8f3;
+  color: #a88c7d;
+  min-height: 60px;
+  resize: vertical;
+  outline: none;
+  transition: border 0.2s;
+}
+.textarea:focus {
+  border: 1.5px solid #f3b6c2;
+  background: #fff;
+}
+.reserveBtn {
+  background: linear-gradient(90deg, #f3b6c2 0%, #e7bfa7 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.15rem;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(243, 182, 194, 0.15);
+  padding: 14px 0;
+  text-align: center;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+  letter-spacing: 0.05em;
+}
+.reserveBtn:active {
+  background: linear-gradient(90deg, #e7bfa7 0%, #f3b6c2 100%);
+  box-shadow: 0 1px 4px rgba(243, 182, 194, 0.10);
+}
+.backBtn {
+  display: block;
+  margin: 28px auto 0 auto;
+  color: #bfae9e;
+  font-size: 1.05rem;
+  text-align: center;
+  text-decoration: underline;
+  letter-spacing: 0.04em;
+  transition: color 0.2s;
+}
+.backBtn:active {
+  color: #f3b6c2;
+} 
