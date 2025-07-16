@@ -23,7 +23,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: "google" });
+    let redirectTo = "";
+    if (typeof window !== "undefined") {
+      redirectTo = window.location.origin + window.location.pathname;
+    }
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo }
+    });
   };
   const signOut = async () => {
     await supabase.auth.signOut();
