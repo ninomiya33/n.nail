@@ -5,16 +5,6 @@ import styles from "./gallery.module.css";
 import GalleryPostForm from "./GalleryPostForm";
 import { supabase } from "../supabaseClient";
 
-type GalleryPost = {
-  id: string;
-  user_id: string;
-  image_url: string;
-  description: string;
-  tags: string[];
-  posted_by: string;
-  created_at: string;
-  likes?: number;
-};
 type GalleryComment = {
   id: string;
   post_id: string;
@@ -25,14 +15,17 @@ type GalleryComment = {
 };
 
 export default function GalleryPage() {
-  const [modal, setModal] = useState<{open: boolean, image: GalleryPost|null}>({open: false, image: null});
   const [showForm, setShowForm] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // 詳細モーダル用の状態・処理を復活
+  const [modal, setModal] = useState<{open: boolean, image: any|null}>({open: false, image: null});
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState<GalleryComment[]>([]);
-  const [posts, setPosts] = useState<GalleryPost[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<any[]>([]);
   const [userInitial, setUserInitial] = useState('U');
 
   useEffect(() => {
@@ -53,6 +46,7 @@ export default function GalleryPage() {
       const { data: userData } = await supabase.auth.getUser();
       const email = userData?.user?.email;
       setUserInitial(email ? email[0].toUpperCase() : 'U');
+      setUserId(userData?.user?.id || null); // 追加: ユーザーIDをstateに
     };
     fetchUser();
   }, []);
@@ -145,7 +139,6 @@ export default function GalleryPage() {
           overflowY: 'auto'
         }}>
           {posts.map((img, i) => {
-            console.log('image_url:', img.image_url);
             const baseUrl = "https://gqdzlktdsqirupzobwgo.supabase.co/storage/v1/object/public/images/";
             const src = (img.image_url && img.image_url.startsWith("http")) ? img.image_url : baseUrl + img.image_url;
             return (
@@ -185,7 +178,7 @@ export default function GalleryPage() {
                   onError={e => { e.currentTarget.src = 'https://via.placeholder.com/150?text=No+Image'; }}
                 />
                 {/* インスタ風下部 */}
-                <div style={{width:'100%', padding:'14px 18px 12px 18px', boxSizing:'border-box', display:'flex', flexDirection:'column', alignItems:'flex-start', borderRadius:'0 0 18px 18px'}}>
+                <div style={{width:'100%', padding:'14px 18px 12px 18px', boxSizing:'border-box', display:'flex', flexDirection:'column', alignItems:'flex-start', borderRadius:'0 0 18px 18px', background:'#fff'}}>
                   {/* アイコン行 */}
                   <div style={{display:'flex', alignItems:'center', gap:18, marginBottom:8}}>
                     <span style={{fontSize:22, color:'#bfae9e', marginRight:2}}>♡</span>
@@ -195,7 +188,9 @@ export default function GalleryPage() {
                   <div style={{fontWeight:600, color:'#a88c7d', fontSize:14, marginBottom:6}}>いいね！ {img.likes ?? 0}件</div>
                   {/* 投稿者名＋説明文 */}
                   <div style={{marginBottom:6}}>
-                    <span style={{fontWeight:700, color:'#bfae9e', marginRight:6}}>{img.posted_by || "Nail.nail"}</span>
+                    <span style={{fontWeight:700, color:'#bfae9e', marginRight:6}}>{
+                      (img.posted_by && img.posted_by.includes('@')) ? 'ユーザー' : (img.posted_by || 'Nail.nail')
+                    }</span>
                     <span style={{color:'#a88c7d', fontSize:14}}>{img.description}</span>
                   </div>
                   {/* タグ */}
@@ -205,24 +200,41 @@ export default function GalleryPage() {
                     ))}
                   </div>
                   {/* 投稿日 */}
-                  <div style={{color:'#bfae9e', fontSize:12}}>{img.created_at?.slice(0,10)}</div>
+                  <div style={{color:'#bfae9e', fontSize:12, marginBottom: userId && img.user_id === userId ? 0 : 6}}>{img.created_at?.slice(0,10)}</div>
+                  {/* 自分の投稿なら編集・削除ボタンを右寄せで横並び表示（背景内に収める） */}
+                  {userId && img.user_id === userId && (
+                    <div style={{display:'flex', gap:10, justifyContent:'flex-end', width:'100%', marginTop:8, boxSizing:'border-box'}}>
+                      <button
+                        style={{
+                          background:'#fff0f6', color:'#e07fa7', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, fontSize:14, boxShadow:'0 1px 4px #fbeee6', cursor:'pointer', transition:'background 0.2s', minWidth:72, boxSizing:'border-box'
+                        }}
+                        onClick={e => {
+                          e.stopPropagation();
+                          // TODO: 編集モーダルを開く処理を後で実装
+                          alert('編集機能は後日実装予定です');
+                        }}
+                      >編集</button>
+                      <button
+                        style={{
+                          background:'#fff0f6', color:'#e07fa7', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, fontSize:14, boxShadow:'0 1px 4px #fbeee6', cursor:'pointer', transition:'background 0.2s', minWidth:72, boxSizing:'border-box'
+                        }}
+                        onClick={async e => {
+                          e.stopPropagation();
+                          if (window.confirm('本当にこの投稿を削除しますか？')) {
+                            await supabase.from('gallery_posts').delete().eq('id', img.id);
+                            setPosts(posts => posts.filter(p => p.id !== img.id));
+                          }
+                        }}
+                      >削除</button>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
         </div>
       )}
-      <div style={{textAlign:'center', margin:'18px 0'}}>
-        <button onClick={()=>setShowForm(f=>!f)} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:10, padding:'12px 32px', fontWeight:700, fontSize:16, cursor:'pointer', boxShadow:'0 2px 8px rgba(243,182,194,0.10)'}}>
-          {showForm ? "投稿フォームを閉じる" : "投稿する"}
-        </button>
-      </div>
-      {showForm && <GalleryPostForm />}
-      <div className={styles.linkGroup}>
-        <Link href="/" className={styles.linkBtn}>トップに戻る</Link>
-        <Link href="/reserve" className={styles.linkBtn}>予約する</Link>
-      </div>
-      {/* 詳細モーダル */}
+      {/* 詳細モーダルを復活 */}
       {modal.open && modal.image && (
         <div style={{
           position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.18)', zIndex:1000,
@@ -248,7 +260,9 @@ export default function GalleryPage() {
               <div style={{fontWeight:600, color:'#a88c7d', fontSize:14, marginBottom:6}}>いいね！ {likeCount}件</div>
               {/* 投稿者名＋説明文 */}
               <div style={{marginBottom:6}}>
-                <span style={{fontWeight:700, color:'#bfae9e', marginRight:6}}>{modal.image.posted_by || "Nail.nail"}</span>
+                <span style={{fontWeight:700, color:'#bfae9e', marginRight:6}}>{
+                  (modal.image.posted_by && modal.image.posted_by.includes('@')) ? 'ユーザー' : (modal.image.posted_by || 'Nail.nail')
+                }</span>
                 <span style={{color:'#a88c7d', fontSize:14}}>{modal.image.description}</span>
               </div>
               {/* タグ */}
@@ -273,7 +287,7 @@ export default function GalleryPage() {
               flex: '1 1 auto'
             }}>
               <div style={{textAlign: 'center', fontWeight: 700, color: '#a88c7d', fontSize: 18, margin: '8px 0 8px 0', letterSpacing: '0.05em'}}>コメント</div>
-              {comments.map(c => (
+              {comments.map((c:any) => (
                 <div key={c.id} style={{display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0'}}>
                   <div style={{
                     width: 36, height: 36, borderRadius: '50%', background: '#fbeee6',
@@ -313,6 +327,16 @@ export default function GalleryPage() {
           </div>
         </div>
       )}
+      <div style={{textAlign:'center', margin:'18px 0'}}>
+        <button onClick={()=>setShowForm(f=>!f)} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:10, padding:'12px 32px', fontWeight:700, fontSize:16, cursor:'pointer', boxShadow:'0 2px 8px rgba(243,182,194,0.10)'}}>
+          {showForm ? "投稿フォームを閉じる" : "投稿する"}
+        </button>
+      </div>
+      {showForm && <GalleryPostForm />}
+      <div className={styles.linkGroup}>
+        <Link href="/" className={styles.linkBtn}>トップに戻る</Link>
+        <Link href="/reserve" className={styles.linkBtn}>予約する</Link>
+      </div>
     </main>
   );
 } 

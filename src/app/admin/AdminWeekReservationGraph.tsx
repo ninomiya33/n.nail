@@ -89,6 +89,18 @@ export default function AdminWeekReservationGraph() {
     return endIdx - startIdx + 1;
   }
 
+  // セルクリック時の処理
+  function handleCellClick(date: string, time: string) {
+    // そのセルに該当する予約を取得
+    const res = reservations.find(r => {
+      const start = getSlotIndex(r.start_time?.slice(0,5));
+      const end = getSlotIndex(r.end_time?.slice(0,5));
+      const idx = timeSlots.indexOf(time);
+      return r.date === date && idx >= start && idx < end;
+    });
+    if (res) setModal({ open: true, reservation: res });
+  }
+
   return (
     <div style={{
       background: '#fff',
@@ -110,57 +122,38 @@ export default function AdminWeekReservationGraph() {
         <table style={{minWidth: 1100, borderCollapse:'separate', borderSpacing:0, fontSize:14}}>
           <thead>
             <tr>
-              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>日付</th>
-              {timeSlots.map(slot => (
-                <th key={slot} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{slot}</th>
+              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>時間</th>
+              {weekDates.map(date => (
+                <th key={date} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{date.slice(5).replace('-','/')}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {weekDates.map((date, rowIdx) => {
-              let skip = 0;
-              return (
-                <tr key={date}>
-                  <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{date.slice(5).replace('-','/')}</td>
-                  {timeSlots.map((slot, colIdx) => {
-                    if (skip > 0) { skip--; return null; }
-                    const res = findReservation(date, slot);
-                    if (res) {
-                      const colSpan = getColSpan(res);
-                      skip = colSpan - 1;
-                      const isDesign = res.menu === "デザイン";
-                      return (
-                        <td key={slot} colSpan={colSpan} style={{padding:0, border:'1px solid #f3b6c2', position:'relative', cursor:'pointer'}}
-                          onClick={() => setModal({open:true, reservation:res})}
-                        >
-                          <div style={{
-                            background: isDesign ? '#f3b6c2' : '#fff',
-                            border: isDesign ? 'none' : '2px solid #f3b6c2',
-                            color: isDesign ? '#fff' : '#bfae9e',
-                            borderRadius:14,
-                            height:32,
-                            margin:'2px auto',
-                            width:'90%',
-                            position:'relative',
-                            left:0, right:0,
-                            display:'flex',
-                            flexDirection:'row', // 横並びに変更
-                            alignItems:'center',
-                            justifyContent:'center',
-                            fontWeight:600,
-                            fontSize:15
-                          }}>
-                            <span style={{fontWeight:700, marginRight:8}}>{res.name}</span>
-                            <span style={{fontSize:13}}>{res.start_time?.slice(0,5)}〜{res.end_time?.slice(0,5)}</span>
-                          </div>
-                        </td>
-                      );
-                    }
-                    return <td key={slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, background:'#fff'}}></td>;
-                  })}
-                </tr>
-              );
-            })}
+            {timeSlots.map((slot, rowIdx) => (
+              <tr key={slot}>
+                <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{slot}</td>
+                {weekDates.map((date, colIdx) => {
+                  // この時間枠が予約済みか判定
+                  const res = reservations.find(r => {
+                    const start = getSlotIndex(r.start_time?.slice(0,5));
+                    const end = getSlotIndex(r.end_time?.slice(0,5));
+                    const idx = rowIdx;
+                    return r.date === date && idx >= start && idx < end;
+                  });
+                  return (
+                    <td key={date+slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, textAlign:'center', background: res ? '#fbeee6' : '#fff', cursor: res ? 'pointer' : 'default'}}
+                      onClick={res ? () => handleCellClick(date, slot) : undefined}
+                    >
+                      {res ? (
+                        <span style={{color:'#f3b6c2', fontSize:22, fontWeight:700}}>×</span>
+                      ) : (
+                        <span style={{color:'#bfae9e', fontSize:22}}>○</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -179,7 +172,7 @@ export default function AdminWeekReservationGraph() {
                 <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>メニュー：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.menu}</span></div>
                 <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>時間：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.start_time?.slice(0,5)}〜{modal.reservation.end_time?.slice(0,5)}</span></div>
                 <div style={{marginBottom:8, color:'#a88c7d', fontWeight:600}}><b>日付：</b><span style={{color:'#a88c7d', fontWeight:500}}>{modal.reservation.date}</span></div>
-                <button style={{marginTop:12, background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={()=>{
+                <button style={{marginTop:12, background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={() => {
                   setEditForm({
                     name: modal.reservation?.name || '',
                     menu: modal.reservation?.menu || '',
@@ -188,6 +181,19 @@ export default function AdminWeekReservationGraph() {
                   });
                   setEditMode(true);
                 }}>編集</button>
+                <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={async () => {
+                  if (!modal.reservation) return;
+                  if (!window.confirm('本当にこの予約を削除しますか？')) return;
+                  await supabase.from('reservations').delete().eq('id', modal.reservation.id);
+                  setModal({open:false,reservation:null});
+                  setEditMode(false);
+                  // 再取得
+                  const { data, error } = await supabase
+                    .from("reservations")
+                    .select("id, name, menu, start_time, end_time, date")
+                    .in("date", weekDates);
+                  if (!error && data) setReservations(data);
+                }}>削除</button>
                 <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer'}} onClick={()=>setModal({open:false,reservation:null})}>閉じる</button>
               </>
             ) : editMode && modal.reservation ? (
@@ -225,6 +231,12 @@ export default function AdminWeekReservationGraph() {
                   }).eq('id', modal.reservation.id);
                   setEditMode(false);
                   setModal(m => ({...m, reservation: {...(m.reservation as Reservation), ...editForm, start_time: editForm.start_time + ':00', end_time: editForm.end_time + ':00'}}));
+                  // 再取得
+                  const { data, error } = await supabase
+                    .from("reservations")
+                    .select("id, name, menu, start_time, end_time, date")
+                    .in("date", weekDates);
+                  if (!error && data) setReservations(data);
                 }}>保存</button>
                 <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer'}} onClick={()=>setEditMode(false)}>キャンセル</button>
               </>

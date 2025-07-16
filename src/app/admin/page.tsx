@@ -4,13 +4,7 @@ import styles from "./admin.module.css";
 import { supabase } from "../supabaseClient";
 import AdminWeekReservationGraph from "./AdminWeekReservationGraph";
 import GalleryPostForm from "../gallery/GalleryPostForm";
-
-const timeSlots = [
-  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00"
-];
-const menuList = ["デザイン", "シンプル"];
+import GalleryList, { GalleryPost } from "../gallery/GalleryList";
 
 type Reservation = {
   id?: string;
@@ -29,11 +23,22 @@ type ModalState = {
   reservation: Reservation | null;
 };
 
+// 時間枠（AdminWeekReservationGraphと同じ内容でOK）
+const timeSlots = [
+  "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+  "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+  "16:00", "16:30", "17:00"
+];
+
 function getSlotIndex(time: string) {
   return timeSlots.indexOf(time);
 }
 
+const ADMIN_PASS = "0110"; // 必要に応じて.env管理も可
+
 export default function AdminPage() {
+  const [authed, setAuthed] = useState(false);
+  const [input, setInput] = useState("");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
@@ -75,6 +80,25 @@ export default function AdminPage() {
   useEffect(() => {
     fetchReservations(selectedDate);
   }, [selectedDate]);
+
+  // ギャラリー一覧＋削除
+  const [galleryPosts, setGalleryPosts] = useState<GalleryPost[]>([]);
+  const [galleryLoading, setGalleryLoading] = useState(false);
+  const fetchGalleryPosts = async () => {
+    setGalleryLoading(true);
+    const { data, error } = await supabase
+      .from("gallery_posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) setGalleryPosts(data);
+    setGalleryLoading(false);
+  };
+  useEffect(() => { fetchGalleryPosts(); }, []);
+  const handleDeleteGallery = async (id: string) => {
+    if (!window.confirm('本当にこの投稿を削除しますか？')) return;
+    await supabase.from('gallery_posts').delete().eq('id', id);
+    fetchGalleryPosts();
+  };
 
   // 枠クリック時
   const handleCellClick = (menu: string, slot: string) => {
@@ -147,6 +171,47 @@ export default function AdminPage() {
     return startIdx <= slotIdx && slotIdx < endIdx;
   };
 
+  // ギャラリーモーダル
+  const [galleryModal, setGalleryModal] = useState<{open: boolean, post: GalleryPost|null}>({open: false, post: null});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setAuthed(localStorage.getItem('adminAuthed') === 'true');
+    }
+  }, []);
+
+  const handleLogin = () => {
+    if (input === ADMIN_PASS) {
+      setAuthed(true);
+      localStorage.setItem('adminAuthed', 'true');
+    } else {
+      alert('パスワードが違います');
+    }
+  };
+
+  if (!authed) {
+    return (
+      <main className={styles.container}>
+        <div style={{maxWidth:340, margin:'80px auto', background:'#fff', borderRadius:18, boxShadow:'0 4px 16px rgba(200,180,160,0.13)', padding:'32px 24px', display:'flex', flexDirection:'column', alignItems:'center'}}>
+          <h2 style={{color:'#bfae9e', fontWeight:700, fontSize:22, marginBottom:24}}>管理者パスワードを入力</h2>
+          <input
+            type="password"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            maxLength={8}
+            style={{fontSize:20, borderRadius:10, border:'1.5px solid #f3b6c2', padding:'10px 18px', marginBottom:18, width:'100%', textAlign:'center', color:'#a88c7d'}}
+            placeholder="4桁の数字"
+            inputMode="numeric"
+          />
+          <button
+            onClick={handleLogin}
+            style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:10, padding:'12px 32px', fontWeight:700, fontSize:18, cursor:'pointer', boxShadow:'0 2px 8px rgba(243,182,194,0.10)'}}
+          >ログイン</button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className={styles.container}>
       <h1 className={styles.title}>予約管理</h1>
@@ -155,6 +220,38 @@ export default function AdminPage() {
       <div style={{marginTop: 40, width: '100%', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto'}}>
         <GalleryPostForm />
       </div>
+      {/* ギャラリー一覧＋削除機能 */}
+      <div style={{marginTop: 40, width: '100%', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto'}}>
+        <h2 style={{fontWeight:700, color:'#bfae9e', fontSize:20, marginBottom:18, textAlign:'center'}}>ギャラリー一覧（管理）</h2>
+        <GalleryList posts={galleryPosts} loading={galleryLoading} adminMode onDelete={handleDeleteGallery} />
+      </div>
+      {/* ギャラリーモーダル */}
+      {galleryModal.open && galleryModal.post && (
+        <div style={{
+          position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.18)', zIndex:1000,
+          display:'flex', alignItems:'center', justifyContent:'center'
+        }} onClick={()=>setGalleryModal({open:false, post:null})}>
+          <div style={{background:'#fff', borderRadius:16, minWidth:280, maxWidth:400, padding:0, boxShadow:'0 4px 24px rgba(200,180,160,0.18)', overflow:'hidden', position:'relative', display:'flex', flexDirection:'column', alignItems:'stretch'}} onClick={e=>e.stopPropagation()}>
+            {/* 上部画像 */}
+            <div style={{width:'100%', background:'#eee'}}>
+              <img src={galleryModal.post.image_url} alt={galleryModal.post.description} style={{width:'100%', maxHeight:340, objectFit:'cover', display:'block'}} />
+            </div>
+            {/* 内容 */}
+            <div style={{padding:'16px 18px 12px 18px'}}>
+              <div style={{fontWeight:700, color:'#bfae9e', marginBottom:6}}>{galleryModal.post.posted_by || "Nail.nail"}</div>
+              <div style={{color:'#a88c7d', fontSize:14, marginBottom:6}}>{galleryModal.post.description}</div>
+              <div style={{marginBottom:6, color:'#a88c7d', fontSize:13}}>
+                {(galleryModal.post.tags || []).map((tag:string, j:number) => (
+                  <span key={j} style={{background:'#fbeee6', color:'#e7bfa7', borderRadius:8, padding:'2px 8px', marginRight:6}}># {tag}</span>
+                ))}
+              </div>
+              <div style={{color:'#bfae9e', fontSize:12}}>{galleryModal.post.created_at?.slice(0,10)}</div>
+              <button onClick={()=>handleDeleteGallery(galleryModal.post!.id)} style={{marginTop:18, background:'#e57373', color:'#fff', border:'none', borderRadius:8, padding:'8px 22px', fontWeight:600, cursor:'pointer', alignSelf:'flex-end'}}>削除</button>
+            </div>
+            <button style={{margin:'12px 18px 18px 18px', background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'10px 0', fontWeight:600, cursor:'pointer', width:'calc(100% - 36px)'}} onClick={() => setGalleryModal({open:false, post:null})}>閉じる</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 } 

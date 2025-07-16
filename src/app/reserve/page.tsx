@@ -69,9 +69,14 @@ export default function ReservePage() {
     setLoading(false);
   };
 
+  // カレンダー○クリック時に日付・時間をセット
+  const handleCalendarSelect = (date: string, time: string) => {
+    setForm(f => ({ ...f, date, time }));
+  };
+
   return (
     <main className={styles.container}>
-      <WeekReservationGraph />
+      <WeekReservationGraph onSelect={handleCalendarSelect} />
       <div className={styles.logoArea}>
         <span className={styles.logoN}>N</span>
         <span className={styles.logoDot}>.</span>

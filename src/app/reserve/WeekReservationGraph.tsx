@@ -40,10 +40,11 @@ type Reservation = {
   date: string;
 };
 
-export default function WeekReservationGraph() {
+export default function WeekReservationGraph({ onSelect }: { onSelect?: (date: string, time: string) => void }) {
   const [weekStart, setWeekStart] = useState<Date>(getMonday(today));
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<{date: string, time: string} | null>(null);
   const maxDate = new Date(today);
   maxDate.setMonth(maxDate.getMonth() + 3);
   maxDate.setHours(0,0,0,0);
@@ -89,6 +90,12 @@ export default function WeekReservationGraph() {
     return endIdx - startIdx + 1;
   }
 
+  // セル選択時の処理
+  function handleSelect(date: string, time: string) {
+    setSelected({ date, time });
+    if (onSelect) onSelect(date, time);
+  }
+
   return (
     <div style={{
       background: '#fff',
@@ -110,16 +117,9 @@ export default function WeekReservationGraph() {
         fontWeight: 500,
         justifyContent: 'center'
       }}>
-        <span style={{
-          display: 'inline-block',
-          width: 32,
-          height: 12,
-          background: '#f3b6c2',
-          borderRadius: 6,
-          marginRight: 6,
-          verticalAlign: 'middle'
-        }}></span>
-        ＝予約済み　／　空白セルを選んで予約できます
+        <span style={{fontSize:22, color:'#f3b6c2', marginRight:6}}>○</span>＝空き　
+        <span style={{fontSize:22, color:'#ccc', marginRight:6}}>×</span>＝予約済み　
+        空き枠をクリックして予約できます
       </div>
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
         <button onClick={handlePrevWeek} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'4px 12px', fontWeight:600, cursor:'pointer'}}>前の週</button>
@@ -132,51 +132,42 @@ export default function WeekReservationGraph() {
         <table style={{minWidth: 1100, borderCollapse:'separate', borderSpacing:0, fontSize:14}}>
           <thead>
             <tr>
-              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>日付</th>
-              {timeSlots.map(slot => (
-                <th key={slot} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{slot}</th>
+              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>時間</th>
+              {weekDates.map(date => (
+                <th key={date} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{date.slice(5).replace('-','/')}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {weekDates.map((date, rowIdx) => {
-              let skip = 0;
-              return (
-                <tr key={date}>
-                  <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{date.slice(5).replace('-','/')}</td>
-                  {timeSlots.map((slot, colIdx) => {
-                    if (skip > 0) { skip--; return null; }
-                    const res = findReservation(date, slot);
-                    if (res) {
-                      const colSpan = getColSpan(res);
-                      skip = colSpan - 1;
-                      return (
-                        <td key={slot} colSpan={colSpan} style={{padding:0, border:'1px solid #f3b6c2', position:'relative'}}>
-                          <div style={{
-                            background:'#f3b6c2',
-                            borderRadius:14,
-                            height:28,
-                            margin:'2px auto',
-                            width:'90%',
-                            position:'relative',
-                            left:0, right:0,
-                            display:'flex',
-                            alignItems:'center',
-                            justifyContent:'center',
-                            fontWeight:600,
-                            fontSize:15,
-                            color:'#fff'
-                          }}>
-                            <span style={{fontSize:13}}>{res.start_time?.slice(0,5)}〜{res.end_time?.slice(0,5)}</span>
-                          </div>
-                        </td>
-                      );
-                    }
-                    return <td key={slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, background:'#fff'}}></td>;
-                  })}
-                </tr>
-              );
-            })}
+            {timeSlots.map((slot, rowIdx) => (
+              <tr key={slot}>
+                <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{slot}</td>
+                {weekDates.map((date, colIdx) => {
+                  // この時間枠が予約済みか判定
+                  const isReserved = reservations.some(r => {
+                    const start = getSlotIndex(r.start_time?.slice(0,5));
+                    const end = getSlotIndex(r.end_time?.slice(0,5));
+                    const idx = rowIdx;
+                    return r.date === date && idx >= start && idx < end;
+                  });
+                  const isSelected = selected && selected.date === date && selected.time === slot;
+                  return (
+                    <td key={date+slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, textAlign:'center', background: isSelected ? '#fbeee6' : '#fff'}}>
+                      {isReserved ? (
+                        <span style={{color:'#ccc', fontSize:22}}>×</span>
+                      ) : (
+                        <button
+                          style={{
+                            border:'none', background:'none', fontSize:24, color: isSelected ? '#fff' : '#f3b6c2', cursor:'pointer', borderRadius:'50%', backgroundColor: isSelected ? '#f3b6c2' : 'transparent', width:28, height:28, lineHeight:'28px', fontWeight: isSelected ? 700 : 500, transition:'background 0.2s, color 0.2s'
+                          }}
+                          onClick={() => handleSelect(date, slot)}
+                        >○</button>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
