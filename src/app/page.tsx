@@ -14,8 +14,7 @@ export default function Home() {
         <div className={styles.logoSub}>Nail Salon</div>
       </div>
       <div className={styles.introCard}>
-        <p>シンプルで可愛い、上質なネイル体験を。</p>
-        <p>ご予約・ギャラリーは下記からどうぞ。</p>
+        <img src="/nail-logo.png" alt="Nail Salon ロゴ" style={{width: 180, maxWidth: '90%', height: 'auto', display: 'block', margin: '0 auto'}} />
       </div>
       <div className={styles.buttonGroup}>
         <Link href="/reserve" className={styles.reserveBtn}>予約する</Link>
