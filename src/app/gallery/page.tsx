@@ -5,6 +5,17 @@ import styles from "./gallery.module.css";
 import GalleryPostForm from "./GalleryPostForm";
 import { supabase } from "../supabaseClient";
 
+type GalleryPost = {
+  id: string;
+  user_id: string;
+  image_url: string;
+  description: string;
+  tags: string[];
+  posted_by: string;
+  created_at: string;
+  likes?: number;
+};
+
 type GalleryComment = {
   id: string;
   post_id: string;
@@ -16,16 +27,16 @@ type GalleryComment = {
 
 export default function GalleryPage() {
   const [showForm, setShowForm] = useState(false);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
   // 詳細モーダル用の状態・処理を復活
-  const [modal, setModal] = useState<{open: boolean, image: any|null}>({open: false, image: null});
+  const [modal, setModal] = useState<{open: boolean, image: GalleryPost|null}>({open: false, image: null});
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [comment, setComment] = useState("");
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<GalleryComment[]>([]);
   const [userInitial, setUserInitial] = useState('U');
 
   useEffect(() => {
@@ -138,7 +149,7 @@ export default function GalleryPage() {
           padding: '0 0 24px 0',
           overflowY: 'auto'
         }}>
-          {posts.map((img, i) => {
+          {posts.map((img: GalleryPost, i: number) => {
             const baseUrl = "https://gqdzlktdsqirupzobwgo.supabase.co/storage/v1/object/public/images/";
             const src = (img.image_url && img.image_url.startsWith("http")) ? img.image_url : baseUrl + img.image_url;
             return (
@@ -287,7 +298,7 @@ export default function GalleryPage() {
               flex: '1 1 auto'
             }}>
               <div style={{textAlign: 'center', fontWeight: 700, color: '#a88c7d', fontSize: 18, margin: '8px 0 8px 0', letterSpacing: '0.05em'}}>コメント</div>
-              {comments.map((c:any) => (
+              {comments.map((c: GalleryComment) => (
                 <div key={c.id} style={{display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0'}}>
                   <div style={{
                     width: 36, height: 36, borderRadius: '50%', background: '#fbeee6',
