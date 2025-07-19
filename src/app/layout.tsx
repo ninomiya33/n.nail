@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import "./globals.css";
 import { supabase } from "./supabaseClient";
+import InstallPrompt from "./install-prompt";
+import { register } from "./register-sw";
 
 type SupabaseUser = {
   id: string;
@@ -12,6 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const [user, setUser] = useState<SupabaseUser|null>(null);
 
   useEffect(() => {
+    // Service Worker登録
+    register();
+    
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUser({ id: data.user.id, email: data.user.email ?? '' });
       else setUser(null);
@@ -38,6 +43,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="ja">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#f3b6c2" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="N.nail" />
+        <link rel="apple-touch-icon" href="/nail-logo.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </head>
       <body>
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, padding: 12 }}>
           {user ? (
@@ -50,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           )}
         </div>
         {children}
+        <InstallPrompt />
       </body>
     </html>
   );

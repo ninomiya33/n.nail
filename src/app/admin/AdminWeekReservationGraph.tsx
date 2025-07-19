@@ -4,7 +4,7 @@ import { supabase } from "../supabaseClient";
 const timeSlots = [
   "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
   "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-  "16:00", "16:30", "17:00"
+  "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00"
 ];
 
 function getWeekDates(startDate: Date) {
@@ -47,11 +47,53 @@ export default function AdminWeekReservationGraph() {
   const [modal, setModal] = useState<{open: boolean, reservation: Reservation|null}>({open: false, reservation: null});
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', menu: '', start_time: '', end_time: '' });
+  const [unavailableDays, setUnavailableDays] = useState<string[]>([]); // 予約不可日
+  const [unavailableTimes, setUnavailableTimes] = useState<{date: string, time: string}[]>([]); // 予約不可時間
   const maxDate = new Date(today);
   maxDate.setMonth(maxDate.getMonth() + 3);
   maxDate.setHours(0,0,0,0);
 
   const weekDates = getWeekDates(weekStart);
+
+  // 予約不可情報の取得
+  useEffect(() => {
+    const fetchUnavailable = async () => {
+      const { data: days } = await supabase.from('unavailable_days').select('date');
+      setUnavailableDays(days ? days.map(d => d.date) : []);
+      const { data: times } = await supabase.from('unavailable_times').select('date, time');
+      setUnavailableTimes(times || []);
+    };
+    fetchUnavailable();
+  }, []);
+
+  // 日付クリックで予約可否トグル
+  const handleDayClick = async (date: string) => {
+    if (!editMode) return;
+    if (unavailableDays.includes(date)) {
+      // 可にする（削除）
+      await supabase.from('unavailable_days').delete().eq('date', date);
+      setUnavailableDays(unavailableDays.filter(d => d !== date));
+    } else {
+      // 不可にする（追加）
+      await supabase.from('unavailable_days').insert({ date });
+      setUnavailableDays([...unavailableDays, date]);
+    }
+  };
+
+  // 時間枠クリックで予約可否トグル
+  const handleTimeClick = async (date: string, time: string) => {
+    if (!editMode) return;
+    const exists = unavailableTimes.some(t => t.date === date && t.time === time);
+    if (exists) {
+      // 可にする（削除）
+      await supabase.from('unavailable_times').delete().eq('date', date).eq('time', time);
+      setUnavailableTimes(unavailableTimes.filter(t => !(t.date === date && t.time === time)));
+    } else {
+      // 不可にする（追加）
+      await supabase.from('unavailable_times').insert({ date, time });
+      setUnavailableTimes([...unavailableTimes, { date, time }]);
+    }
+  };
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -101,6 +143,38 @@ export default function AdminWeekReservationGraph() {
     if (res) setModal({ open: true, reservation: res });
   }
 
+  // 予約一覧再取得関数を定義
+  const fetchReservations = async () => {
+    setLoading(true);
+    const weekDates = getWeekDates(weekStart); // 最新の週の日付を毎回計算
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("id, name, menu, start_time, end_time, date")
+      .in("date", weekDates);
+    if (!error && data) setReservations(data);
+    setLoading(false);
+  };
+
+  // 予約削除
+  const handleDelete = async () => {
+    console.log("handleDelete呼び出し");
+    if (modal.reservation && modal.reservation.id) {
+      setLoading(true);
+      const { error } = await supabase
+        .from("reservations")
+        .delete()
+        .eq("id", modal.reservation.id);
+      console.log("削除リクエスト結果", error);
+      if (error) {
+        alert("削除に失敗しました: " + error.message);
+      }
+      // 削除後に予約一覧を再取得
+      await fetchReservations();
+      setLoading(false);
+    }
+    setModal({ open: false, reservation: null });
+  };
+
   return (
     <div style={{
       background: '#fff',
@@ -111,6 +185,44 @@ export default function AdminWeekReservationGraph() {
       width: '100%',
       overflowX: 'auto'
     }}>
+      {/* 編集モードボタンを追加 */}
+      <button
+        onClick={() => setEditMode(v => !v)}
+        style={{
+          marginBottom: 16,
+          background: editMode ? '#f3b6c2' : '#fff',
+          color: editMode ? '#fff' : '#bfae9e',
+          border: '1.5px solid #f3b6c2',
+          borderRadius: 10,
+          padding: '8px 22px',
+          fontWeight: 700,
+          fontSize: 15,
+          cursor: 'pointer'
+        }}
+      >
+        編集モード{editMode ? 'ON' : 'OFF'}
+      </button>
+      {/* 凡例・案内文 */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 2,
+        margin: '8px 0 12px 0',
+        fontSize: 14,
+        color: '#bfae9e',
+        fontWeight: 500,
+        textAlign: 'center',
+        lineHeight: 1.5
+      }}>
+        <div>
+          <span style={{fontSize:22, color:'#f3b6c2', marginRight:6}}>○</span>＝空き　
+          <span style={{fontSize:22, color:'#ccc', marginRight:6}}>×</span>＝予約済み
+        </div>
+        <div>
+          空き枠をクリックで予約不可/可を切り替えできます
+        </div>
+      </div>
       <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
         <button onClick={handlePrevWeek} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'4px 12px', fontWeight:600, cursor:'pointer'}}>前の週</button>
         <span style={{fontWeight:700, color:'#bfae9e', fontSize:16}}>
@@ -119,19 +231,23 @@ export default function AdminWeekReservationGraph() {
         <button onClick={handleNextWeek} style={{background:'#f3b6c2', color:'#fff', border:'none', borderRadius:8, padding:'4px 12px', fontWeight:600, cursor:'pointer'}} disabled={weekDates[6] >= maxDate.toISOString().slice(0,10)}>次の週</button>
       </div>
       <div style={{width: '100%', overflowX: 'auto'}}>
-        <table style={{minWidth: 1100, borderCollapse:'separate', borderSpacing:0, fontSize:14}}>
+        <table style={{minWidth: 800, borderCollapse:'separate', borderSpacing:0, fontSize:13}}>
           <thead>
             <tr>
-              <th style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:80}}>時間</th>
+              <th style={{
+                background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:40, position:'sticky', left:0, zIndex:2, borderRight:'1px solid #f3b6c2', padding:'2px 4px'
+              }}>時間</th>
               {weekDates.map(date => (
-                <th key={date} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:60}}>{date.slice(5).replace('-','/')}</th>
+                <th key={date} style={{background:'#fbeee6', color:'#bfae9e', fontWeight:600, minWidth:40, padding:'2px 4px'}}>{date.slice(5).replace('-','/')}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {timeSlots.map((slot, rowIdx) => (
               <tr key={slot}>
-                <td style={{background:'#fbeee6', color:'#e7bfa7', fontWeight:600}}>{slot}</td>
+                <td style={{
+                  background:'#fbeee6', color:'#e7bfa7', fontWeight:600, position:'sticky', left:0, zIndex:1, borderRight:'1px solid #f3b6c2', padding:'2px 4px'
+                }}>{slot}</td>
                 {weekDates.map((date, colIdx) => {
                   // この時間枠が予約済みか判定
                   const res = reservations.find(r => {
@@ -140,15 +256,34 @@ export default function AdminWeekReservationGraph() {
                     const idx = rowIdx;
                     return r.date === date && idx >= start && idx < end;
                   });
+                  const isUnavailable = unavailableTimes.some(t => t.date === date && t.time === slot);
                   return (
-                    <td key={date+slot} style={{border:'1px solid #f3b6c2', minWidth:60, height:32, textAlign:'center', background: res ? '#fbeee6' : '#fff', cursor: res ? 'pointer' : 'default'}}
-                      onClick={res ? () => handleCellClick(date, slot) : undefined}
+                    <td
+                      key={date+slot}
+                      style={{
+                        border:'1px solid #f3b6c2',
+                        minWidth:60,
+                        height:32,
+                        textAlign:'center',
+                        background: isUnavailable ? '#fbeee6' : (res ? '#fbeee6' : '#fff'),
+                        color: isUnavailable ? '#e57373' : (res ? '#f3b6c2' : '#bfae9e'),
+                        cursor: editMode ? 'pointer' : (res ? 'pointer' : 'default')
+                      }}
+                      onClick={() => {
+                        if (editMode) {
+                          handleTimeClick(date, slot);
+                        } else if (res) {
+                          handleCellClick(date, slot);
+                        }
+                      }}
                     >
-                      {res ? (
-                        <span style={{color:'#f3b6c2', fontSize:22, fontWeight:700}}>×</span>
-                      ) : (
-                        <span style={{color:'#bfae9e', fontSize:22}}>○</span>
-                      )}
+                      {isUnavailable
+                        ? <span style={{fontSize:22, fontWeight:700}}>×</span>
+                        : (res
+                          ? <span style={{color:'#f3b6c2', fontSize:22, fontWeight:700}}>×</span>
+                          : <span style={{color:'#bfae9e', fontSize:22}}>○</span>
+                        )
+                      }
                     </td>
                   );
                 })}
@@ -181,19 +316,7 @@ export default function AdminWeekReservationGraph() {
                   });
                   setEditMode(true);
                 }}>編集</button>
-                <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={async () => {
-                  if (!modal.reservation) return;
-                  if (!window.confirm('本当にこの予約を削除しますか？')) return;
-                  await supabase.from('reservations').delete().eq('id', modal.reservation.id);
-                  setModal({open:false,reservation:null});
-                  setEditMode(false);
-                  // 再取得
-                  const { data, error } = await supabase
-                    .from("reservations")
-                    .select("id, name, menu, start_time, end_time, date")
-                    .in("date", weekDates);
-                  if (!error && data) setReservations(data);
-                }}>削除</button>
+                <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer', marginRight:8}} onClick={() => { console.log("削除ボタン押下"); handleDelete(); }}>削除</button>
                 <button style={{marginTop:12, background:'#e7bfa7', color:'#fff', border:'none', borderRadius:8, padding:'6px 18px', fontWeight:600, cursor:'pointer'}} onClick={()=>setModal({open:false,reservation:null})}>閉じる</button>
               </>
             ) : editMode && modal.reservation ? (

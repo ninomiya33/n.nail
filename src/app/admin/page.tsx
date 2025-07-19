@@ -5,6 +5,7 @@ import { supabase } from "../supabaseClient";
 import AdminWeekReservationGraph from "./AdminWeekReservationGraph";
 import GalleryPostForm from "../gallery/GalleryPostForm";
 import GalleryList, { GalleryPost } from "../gallery/GalleryList";
+import CustomerList from "../reserve/CustomerList";
 
 type Reservation = {
   id?: string;
@@ -47,6 +48,7 @@ export default function AdminPage() {
   const [modal, setModal] = useState<ModalState>({ open: false, menu: "", slot: "", reservation: null });
   const [form, setForm] = useState({ name: "", start_time: "", end_time: "" });
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<'gallery' | 'customer'>('gallery');
 
   // 予約データ取得
   const fetchReservations = async (date: string) => {
@@ -216,17 +218,59 @@ export default function AdminPage() {
     <main className={styles.container}>
       <h1 className={styles.title}>予約管理</h1>
       <AdminWeekReservationGraph />
-      {/* ギャラリー投稿フォームを下部に追加 */}
-      <div style={{marginTop: 40, width: '100%', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto'}}>
-        <GalleryPostForm />
+      {/* タブ切り替えボタン */}
+      <div style={{display:'flex', gap:16, justifyContent:'center', margin:'32px 0'}}>
+        <button
+          onClick={() => setTab('gallery')}
+          style={{
+            background: tab === 'gallery' ? '#f3b6c2' : '#fff',
+            color: tab === 'gallery' ? '#fff' : '#bfae9e',
+            border: '1.5px solid #f3b6c2',
+            borderRadius: 10,
+            padding: '10px 32px',
+            fontWeight: 700,
+            fontSize: 16,
+            cursor: 'pointer',
+            boxShadow: tab === 'gallery' ? '0 2px 8px rgba(243,182,194,0.10)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >ギャラリー一覧</button>
+        <button
+          onClick={() => setTab('customer')}
+          style={{
+            background: tab === 'customer' ? '#f3b6c2' : '#fff',
+            color: tab === 'customer' ? '#fff' : '#bfae9e',
+            border: '1.5px solid #f3b6c2',
+            borderRadius: 10,
+            padding: '10px 32px',
+            fontWeight: 700,
+            fontSize: 16,
+            cursor: 'pointer',
+            boxShadow: tab === 'customer' ? '0 2px 8px rgba(243,182,194,0.10)' : 'none',
+            transition: 'all 0.2s',
+          }}
+        >顧客管理</button>
       </div>
-      {/* ギャラリー一覧＋削除機能 */}
-      <div style={{marginTop: 40, width: '100%', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto'}}>
-        <h2 style={{fontWeight:700, color:'#bfae9e', fontSize:20, marginBottom:18, textAlign:'center'}}>ギャラリー一覧（管理）</h2>
-        <GalleryList posts={galleryPosts} loading={galleryLoading} adminMode onDelete={handleDeleteGallery} />
-      </div>
-      {/* ギャラリーモーダル */}
-      {galleryModal.open && galleryModal.post && (
+      {/* タブ内容 */}
+      {tab === 'gallery' && (
+        <>
+          <div style={{marginTop: 40, width: '100%', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto'}}>
+            <GalleryPostForm />
+          </div>
+          <div style={{marginTop: 40, width: '100%', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto'}}>
+            <h2 style={{fontWeight:700, color:'#bfae9e', fontSize:20, marginBottom:18, textAlign:'center'}}>ギャラリー一覧（管理）</h2>
+            <GalleryList posts={galleryPosts} loading={galleryLoading} adminMode onDelete={handleDeleteGallery} />
+          </div>
+        </>
+      )}
+      {tab === 'customer' && (
+        <div style={{marginTop: 40, width: '100%', maxWidth: 440, marginLeft: 'auto', marginRight: 'auto'}}>
+          <h2 style={{fontWeight:700, color:'#bfae9e', fontSize:20, marginBottom:18, textAlign:'center'}}>顧客管理</h2>
+          <CustomerList />
+        </div>
+      )}
+      {/* ギャラリーモーダル（ギャラリータブ時のみ表示） */}
+      {tab === 'gallery' && galleryModal.open && galleryModal.post && (
         <div style={{
           position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.18)', zIndex:1000,
           display:'flex', alignItems:'center', justifyContent:'center'
